@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 5000
+      CHATBOT_DB: /data/chatbot_sessions.db
+      ADMIN_SETTINGS_PATH: /data/admin_settings.json
+      LLM_PROVIDER: ${LLM_PROVIDER:-claude}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD before running docker compose}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-anthropic.claude-sonnet-4-5-v2:0}
+    volumes:
+      - chatbot_data:/data
+    restart: unless-stopped
+
+volumes:
+  chatbot_data:

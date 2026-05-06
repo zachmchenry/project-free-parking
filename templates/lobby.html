@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lobby — Project Free Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="lobby-page">
+  <div class="wide-app">
+    <header class="brand-bar">
+      <a class="brand-link" href="{{ url_for('index') }}">Project Free Parking</a>
+      <div class="participant-meta">
+        <span class="participant-name js-trainee-name"></span>
+        <span class="timer-pill js-session-timer">00:00</span>
+        <button class="end-button" id="logout" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="lobby-main">
+      <div class="lobby-heading">
+        <p class="eyebrow">Lobby</p>
+        <h1>Choose a stakeholder</h1>
+      </div>
+
+      <section class="persona-grid" aria-label="Available personas">
+        {% for persona in personas %}
+          <a
+            class="persona-card persona-card-{{ persona.theme }}"
+            href="{{ url_for('chat', persona_key=persona.key) }}"
+          >
+            <div class="persona-portrait" aria-hidden="true">
+              <span class="portrait-initial">{{ persona.initial }}</span>
+              <span class="portrait-token token-one"></span>
+              <span class="portrait-token token-two"></span>
+            </div>
+            <div class="persona-card-body">
+              <span class="persona-tag">{{ persona.tag }}</span>
+              <h2>{{ persona.name }}</h2>
+              <p class="persona-role">{{ persona.role }}</p>
+              <p>{{ persona.summary }}</p>
+            </div>
+          </a>
+        {% endfor %}
+      </section>
+
+      <section class="logout-summary hidden" id="logout-summary" aria-live="polite">
+        <p class="eyebrow">End Session</p>
+        <h2 id="logout-summary-title">Session complete</h2>
+        <p id="logout-summary-text"></p>
+        <div class="persona-time-list" id="logout-persona-times"></div>
+        <button class="button-link" id="start-over" type="button">Start Over</button>
+      </section>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='timer.js') }}"></script>
+  <script src="{{ url_for('static', filename='lobby.js') }}"></script>
+</body>
+</html>

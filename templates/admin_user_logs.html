@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ user_name or "Anonymous" }} Logs — Project Free Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="admin-page">
+  <main class="admin-shell admin-shell-wide">
+    <section class="admin-panel admin-panel-wide">
+      <div class="admin-header">
+        <p class="eyebrow">Admin Logs</p>
+        <h1>{{ user_name or "Anonymous" }}</h1>
+        <nav class="admin-nav" aria-label="Admin sections">
+          <a href="{{ url_for('admin') }}">Configuration</a>
+          <a href="{{ url_for('admin_logs') }}">All Users</a>
+        </nav>
+      </div>
+
+      <section class="admin-section">
+        <h2>Sessions</h2>
+        {% if sessions %}
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Persona</th>
+                  <th>Started</th>
+                  <th>Ended</th>
+                  <th>Duration</th>
+                  <th>State</th>
+                  <th>Transcript</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for session in sessions %}
+                  <tr>
+                    <td>{{ persona_label(session.persona) }}</td>
+                    <td>{{ session.created_at }}</td>
+                    <td>{{ session.ended_at or "Open" }}</td>
+                    <td>{{ session.client_elapsed_seconds|duration }}</td>
+                    <td>{{ session.end_reason or ("cut off" if session.cut_off else "active") }}</td>
+                    <td>
+                      <a href="{{ url_for('admin_session_log', session_id=session.session_id) }}">
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="empty-state">No sessions found for this user.</p>
+        {% endif %}
+      </section>
+
+      <section class="admin-section">
+        <h2>Logout Summaries</h2>
+        {% if summaries %}
+          <div class="summary-list">
+            {% for item in summaries %}
+              <article class="summary-item">
+                <div class="summary-meta">
+                  <strong>{{ item.created_at }}</strong>
+                  <span>{{ item.total_elapsed_seconds|duration }}</span>
+                </div>
+                <p>{{ item.summary }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty-state">This user has not generated a logout summary yet.</p>
+        {% endif %}
+      </section>
+    </section>
+  </main>
+</body>
+</html>

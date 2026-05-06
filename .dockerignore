@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+env/
+.env
+.git/
+.gitignore
+.DS_Store
+chatbot_sessions.db
+*.db
+admin_settings.json
+*.sqlite
+*.sqlite3
+*.log
+docs/**/*.tmp

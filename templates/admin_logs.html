@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Logs — Project Free Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="admin-page">
+  <main class="admin-shell admin-shell-wide">
+    <section class="admin-panel admin-panel-wide">
+      <div class="admin-header">
+        <p class="eyebrow">Admin</p>
+        <h1>User Logs</h1>
+        <nav class="admin-nav" aria-label="Admin sections">
+          <a href="{{ url_for('admin') }}">Configuration</a>
+          <a href="{{ url_for('admin_logs') }}">User Logs</a>
+        </nav>
+      </div>
+
+      <section class="admin-section">
+        <h2>Users</h2>
+        {% if users %}
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Sessions</th>
+                  <th>Total Time</th>
+                  <th>First Seen</th>
+                  <th>Last Seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                  <tr>
+                    <td>
+                      <a href="{{ url_for('admin_user_logs', name=user.user_name) }}">
+                        {{ user.user_name or "Anonymous" }}
+                      </a>
+                    </td>
+                    <td>{{ user.session_count }}</td>
+                    <td>{{ user.total_elapsed_seconds|duration }}</td>
+                    <td>{{ user.first_seen }}</td>
+                    <td>{{ user.last_seen }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="empty-state">No sessions have been logged yet.</p>
+        {% endif %}
+      </section>
+
+      <section class="admin-section">
+        <h2>Recent End-Session Summaries</h2>
+        {% if summaries %}
+          <div class="summary-list">
+            {% for item in summaries %}
+              <article class="summary-item">
+                <div class="summary-meta">
+                  <strong>{{ item.user_name or "Anonymous" }}</strong>
+                  <span>{{ item.total_elapsed_seconds|duration }}</span>
+                  <span>{{ item.created_at }}</span>
+                </div>
+                <p>{{ item.summary }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty-state">No logout summaries have been generated yet.</p>
+        {% endif %}
+      </section>
+    </section>
+  </main>
+</body>
+</html>

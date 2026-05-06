@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Project Free Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <section class="admin-panel">
+      <div class="admin-header">
+        <p class="eyebrow">Admin</p>
+        <h1>Provider Configuration</h1>
+        <nav class="admin-nav" aria-label="Admin sections">
+          <a href="{{ url_for('admin') }}">Configuration</a>
+          <a href="{{ url_for('admin_logs') }}">User Logs</a>
+        </nav>
+      </div>
+
+      {% if message %}
+        <div class="notice notice-success">{{ message }}</div>
+      {% endif %}
+      {% if error %}
+        <div class="notice notice-error">{{ error }}</div>
+      {% endif %}
+
+      <dl class="config-list">
+        <div>
+          <dt>Active provider</dt>
+          <dd>{{ active_provider }}</dd>
+        </div>
+        <div>
+          <dt>Active model</dt>
+          <dd>{{ active_model }}</dd>
+        </div>
+        <div>
+          <dt>Settings file</dt>
+          <dd>{{ settings_path }}</dd>
+        </div>
+      </dl>
+
+      <form method="post" class="admin-form">
+        <label for="provider">Provider</label>
+        <select id="provider" name="provider">
+          {% for provider in providers %}
+            <option
+              value="{{ provider }}"
+              {% if provider == selected_provider %}selected{% endif %}
+            >
+              {{ provider }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <label for="model">Model</label>
+        <input id="model" name="model" type="text" value="{{ selected_model }}" />
+
+        <button type="submit">Save Configuration</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

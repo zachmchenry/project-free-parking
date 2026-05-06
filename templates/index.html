@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Free Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="entry-page">
+  <main class="entry-shell">
+    <section class="entry-panel" aria-labelledby="project-title">
+      <div class="brand-lockup">
+        <div class="board-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <p class="eyebrow">Stakeholder Interview Simulation</p>
+        <h1 id="project-title">Project Free Parking</h1>
+      </div>
+
+      <form class="name-form" id="name-form">
+        <label for="trainee-name">Your name</label>
+        <div class="name-row">
+          <input
+            id="trainee-name"
+            name="trainee-name"
+            type="text"
+            autocomplete="name"
+            maxlength="80"
+            required
+          />
+          <button type="submit">Enter Lobby</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='timer.js') }}"></script>
+  <script src="{{ url_for('static', filename='landing.js') }}"></script>
+</body>
+</html>

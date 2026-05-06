@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stakeholder Interview — {{ persona.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="app chat-app" data-persona-key="{{ persona.key }}">
+    <header class="topbar">
+      <a class="back-link" href="{{ url_for('lobby') }}">Lobby</a>
+      <div class="persona">
+        <div class="avatar avatar-{{ persona.theme }}" aria-hidden="true">
+          {{ persona.initial }}
+        </div>
+        <div class="meta">
+          <div class="name">{{ persona.name }}</div>
+          <div class="role">{{ persona.role }}</div>
+        </div>
+      </div>
+      <div class="status">
+        <div class="participant-name js-trainee-name"></div>
+        <div class="timer-pill js-session-timer">00:00</div>
+        <div class="status-row">
+          <span class="dot dot-active" id="status-dot"></span>
+          <span id="status-text">Ready</span>
+        </div>
+      </div>
+      <button class="end-button" id="end-session" type="button">End Chat</button>
+    </header>
+
+    <main class="chat" id="chat" aria-live="polite">
+      <!-- Messages injected by chat.js -->
+    </main>
+
+    <section class="end-summary hidden" id="end-summary" aria-live="polite">
+      <p class="eyebrow">Session Summary</p>
+      <h2 id="summary-title">Chat ended</h2>
+      <p id="summary-text"></p>
+      <div class="summary-actions">
+        <a class="button-link" href="{{ url_for('lobby') }}">Return to Lobby</a>
+      </div>
+    </section>
+
+    <div class="warning hidden" id="warning"></div>
+
+    <footer class="composer">
+      <textarea
+        id="input"
+        rows="1"
+        placeholder="Type your message…"
+        aria-label="Message"
+      ></textarea>
+      <button id="send" type="button">Send</button>
+    </footer>
+
+    <div class="footnote">
+      Conversations are logged for faculty review. Press <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line.
+      <span id="session-tag" class="session-tag"></span>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='timer.js') }}"></script>
+  <script src="{{ url_for('static', filename='chat.js') }}"></script>
+</body>
+</html>

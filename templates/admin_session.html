@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transcript — Project Free Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="admin-page">
+  <main class="admin-shell admin-shell-wide">
+    <section class="admin-panel admin-panel-wide">
+      <div class="admin-header">
+        <p class="eyebrow">Transcript</p>
+        <h1>{{ persona.PERSONA_NAME if persona else session.persona }}</h1>
+        <nav class="admin-nav" aria-label="Admin sections">
+          <a href="{{ url_for('admin_logs') }}">All Users</a>
+          <a href="{{ url_for('admin_user_logs', name=session.user_name or '') }}">
+            User Logs
+          </a>
+        </nav>
+      </div>
+
+      <dl class="config-list">
+        <div>
+          <dt>User</dt>
+          <dd>{{ session.user_name or "Anonymous" }}</dd>
+        </div>
+        <div>
+          <dt>Session</dt>
+          <dd>{{ session.session_id }}</dd>
+        </div>
+        <div>
+          <dt>Provider</dt>
+          <dd>{{ session.provider }} ({{ session.model }})</dd>
+        </div>
+        <div>
+          <dt>Duration</dt>
+          <dd>{{ duration|duration }}</dd>
+        </div>
+        <div>
+          <dt>Started</dt>
+          <dd>{{ session.created_at }}</dd>
+        </div>
+        <div>
+          <dt>Ended</dt>
+          <dd>{{ session.ended_at or "Open" }}</dd>
+        </div>
+      </dl>
+
+      {% if session.summary %}
+        <section class="admin-section">
+          <h2>Session Summary</h2>
+          <p class="summary-box">{{ session.summary }}</p>
+        </section>
+      {% endif %}
+
+      <section class="admin-section">
+        <h2>Messages</h2>
+        <div class="transcript-list">
+          {% for message in messages %}
+            <article class="transcript-message transcript-{{ message.role }}">
+              <div class="summary-meta">
+                <strong>{{ "Stakeholder" if message.role == "assistant" else message.role|title }}</strong>
+                <span>{{ message.created_at }}</span>
+                {% if message.on_topic is not none %}
+                  <span>{{ "on-topic" if message.on_topic else "off-topic" }}</span>
+                {% endif %}
+              </div>
+              <p>{{ message.content }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
