@@ -122,3 +122,17 @@ The shared prompt spine lives in `personas/_spine.py`.
 ## Production Notes
 
 This app is suitable for local demos and small controlled deployments. Before broader production use, add trainee/cohort authentication, rate limiting, HTTPS, database backups/rotation, and a production database such as PostgreSQL.
+
+## Security Considerations
+
+This repository is open source software intended for training, demonstration, and small controlled deployments. It is **not hardened for public production use** without additional safeguards.
+
+- Admin pages use HTTP Basic Auth via environment variables. Do not rely on this for high-security contexts.
+- User names are used as session identifiers without identity verification.
+- Conversation logs and transcripts are stored in SQLite without encryption at rest.
+- No rate limiting or CSRF protection is implemented.
+- API keys and secrets should always be managed via environment variables; never commit `.env` files.
+
+## Contributing
+
+Contributions are welcome. Please open an issue or pull request for bugs, feature requests, or documentation improvements.
