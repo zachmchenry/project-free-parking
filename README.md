@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="https://user-gen-media-assets.s3.amazonaws.com/gemini_images/3da1a2bb-a312-48d6-9004-e4325b2aab25.png" alt="Project Free Parking banner showing a BA simulation exercise with stakeholder interviews, requirements gathering, and summary outputs" width="100%" />
+</p>
+
+Project Free Parking is a business analyst simulation tool designed to help learners practice stakeholder interviews in a guided, chat-based environment. Instead of starting with technical setup details, the experience starts with the core BA skill of elicitation: asking good questions, clarifying ambiguity, surfacing constraints, and turning conversation into understanding.
+
+In the exercise, a trainee enters the simulation, selects from stakeholder personas, conducts interviews, and receives a short summary at the end of the session. The tool is meant for BA practice, workshop facilitation, self-guided training, coaching, and portfolio demonstration where the goal is to strengthen discovery and requirements-gathering skills before moving into solution design or delivery.
+
+Its value is in simulating the messy early phase of analysis work: incomplete information, competing stakeholder perspectives, off-topic responses, and the need to synthesize what matters. That makes it useful not just as a demo app, but as a practical training aid for building better interview habits, sharper analysis, and stronger project outcomes.
+
 # Project Free Parking
 
 Dockerized Flask web app for Project Free Parking stakeholder interview simulations. Trainees enter their name, choose one of five persona chatbots from a lobby, interview the stakeholder, then end the chat or log out to receive a short summary. Admins can configure the LLM provider and review per-user conversation logs.
