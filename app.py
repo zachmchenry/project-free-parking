@@ -27,6 +27,7 @@ import hmac
 import json
 import os
 import sqlite3
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -52,6 +53,34 @@ from personas import ALL_PERSONAS
 # ---------- Provider setup ----------
 # Instantiated once at app startup. Admin updates can replace it at runtime.
 VALID_PROVIDERS = ("claude", "openai", "bedrock", "gemini")
+MODEL_DISCOVERY_TTL_SECONDS = 300
+_MODEL_DISCOVERY_CACHE: Dict[str, Dict[str, object]] = {}
+PROVIDER_CREDENTIAL_FIELDS = {
+    "claude": ("anthropic_api_key",),
+    "openai": ("openai_api_key",),
+    "gemini": ("gemini_api_key",),
+    "bedrock": (
+        "aws_access_key_id",
+        "aws_secret_access_key",
+        "aws_session_token",
+        "aws_region",
+    ),
+}
+BEDROCK_CREDENTIAL_KEYS = (
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    "aws_session_token",
+    "aws_region",
+)
+PROVIDER_ENV_MAP = {
+    "anthropic_api_key": "ANTHROPIC_API_KEY",
+    "openai_api_key": "OPENAI_API_KEY",
+    "gemini_api_key": "GEMINI_API_KEY",
+    "aws_access_key_id": "AWS_ACCESS_KEY_ID",
+    "aws_secret_access_key": "AWS_SECRET_ACCESS_KEY",
+    "aws_session_token": "AWS_SESSION_TOKEN",
+    "aws_region": "AWS_REGION",
+}
 
 
 def load_admin_settings() -> Dict[str, str]:
@@ -83,7 +112,99 @@ def build_provider(provider_name: str, model_override: str = ""):
     return llm
 
 
+def normalized_bedrock_credentials(raw) -> Dict[str, str]:
+    creds = raw if isinstance(raw, dict) else {}
+    normalized: Dict[str, str] = {}
+    for key in BEDROCK_CREDENTIAL_KEYS:
+        value = creds.get(key, "")
+        normalized[key] = value.strip() if isinstance(value, str) else ""
+    return normalized
+
+
+def normalized_provider_credentials(settings: Dict[str, object]):
+    """
+    Return normalized credential storage for all providers.
+    """
+    stored = settings.get("provider_credentials")
+    creds = stored if isinstance(stored, dict) else {}
+    normalized: Dict[str, Dict[str, str]] = {}
+    for provider_name, fields in PROVIDER_CREDENTIAL_FIELDS.items():
+        source = creds.get(provider_name)
+        source_dict = source if isinstance(source, dict) else {}
+        provider_values: Dict[str, str] = {}
+        for field in fields:
+            value = source_dict.get(field, "")
+            provider_values[field] = value.strip() if isinstance(value, str) else ""
+        normalized[provider_name] = provider_values
+
+    # Backward compatibility with older single-bedrock key.
+    if "bedrock_credentials" in settings and not any(normalized["bedrock"].values()):
+        normalized["bedrock"] = normalized_bedrock_credentials(
+            settings.get("bedrock_credentials")
+        )
+    return normalized
+
+
+def apply_runtime_credentials(settings: Dict[str, object]):
+    """
+    Apply admin-managed provider credentials to process environment.
+    """
+    provider_credentials = normalized_provider_credentials(settings)
+    for provider_values in provider_credentials.values():
+        for field_key, field_value in provider_values.items():
+            env_name = PROVIDER_ENV_MAP.get(field_key)
+            if not env_name:
+                continue
+            if field_value:
+                os.environ[env_name] = field_value
+            else:
+                os.environ.pop(env_name, None)
+
+
+def extract_provider_credentials_from_form():
+    extracted: Dict[str, Dict[str, str]] = {}
+    for provider_name, fields in PROVIDER_CREDENTIAL_FIELDS.items():
+        extracted[provider_name] = {
+            field: (request.form.get(field) or "").strip()
+            for field in fields
+        }
+    return extracted
+
+
+def discover_models(provider_name: str):
+    """
+    Return (model_ids, source, error) for a provider.
+
+    source:
+      - "dynamic": fetched from provider API
+      - "dynamic_cached": from in-memory cache
+      - "unavailable": dynamic fetch failed or unsupported
+    """
+    now = time.time()
+    cache_entry = _MODEL_DISCOVERY_CACHE.get(provider_name)
+    if cache_entry and (now - cache_entry["fetched_at"]) < MODEL_DISCOVERY_TTL_SECONDS:
+        return cache_entry["models"], "dynamic_cached", cache_entry.get("error", "")
+
+    try:
+        fetched = build_provider(provider_name).list_models()
+        models = sorted({m for m in fetched if isinstance(m, str) and m.strip()})
+        error = ""
+        source = "dynamic"
+    except Exception as exc:
+        models = []
+        error = str(exc)
+        source = "unavailable"
+
+    _MODEL_DISCOVERY_CACHE[provider_name] = {
+        "models": models,
+        "error": error,
+        "fetched_at": now,
+    }
+    return models, source, error
+
+
 _settings = load_admin_settings()
+apply_runtime_credentials(_settings)
 provider = build_provider(
     _settings.get("provider") or config.ACTIVE_PROVIDER,
     _settings.get("model", ""),
@@ -802,28 +923,46 @@ def admin():
 
     message = ""
     error = ""
+    discovery_error = ""
+    settings = load_admin_settings()
     selected_provider = provider.name
-    selected_model = provider.model
+    selected_model = (settings.get("model") or "").strip()
+    provider_credentials = normalized_provider_credentials(settings)
 
     if request.method == "POST":
         selected_provider = (request.form.get("provider") or "").strip().lower()
         selected_model = (request.form.get("model") or "").strip()
+        provider_credentials = extract_provider_credentials_from_form()
         if selected_provider not in VALID_PROVIDERS:
             error = "Choose a valid provider."
         else:
-            try:
-                next_provider = build_provider(selected_provider, selected_model)
-            except Exception as exc:
-                app.logger.exception("Admin provider update failed: %s", exc)
-                error = str(exc)
-            else:
-                provider = next_provider
-                save_admin_settings({
+            available_models, _, _ = discover_models(selected_provider)
+            if selected_model and available_models and selected_model not in available_models:
+                error = "Choose a model from the available list."
+            if not error:
+                next_settings = dict(settings)
+                next_settings.update({
                     "provider": selected_provider,
                     "model": selected_model,
                     "updated_at": now_iso(),
+                    "provider_credentials": provider_credentials,
                 })
-                message = "Configuration saved and applied."
+                try:
+                    apply_runtime_credentials(next_settings)
+                    next_provider = build_provider(selected_provider, selected_model)
+                except Exception as exc:
+                    apply_runtime_credentials(settings)
+                    app.logger.exception("Admin provider update failed: %s", exc)
+                    error = str(exc)
+                else:
+                    provider = next_provider
+                    save_admin_settings(next_settings)
+                    _MODEL_DISCOVERY_CACHE.clear()
+                    message = "Configuration saved and applied."
+
+    model_options, model_source, discovery_error = discover_models(selected_provider)
+    if selected_model and selected_model not in model_options:
+        selected_model = ""
 
     return render_template(
         "admin.html",
@@ -832,10 +971,30 @@ def admin():
         selected_provider=selected_provider,
         selected_model=selected_model,
         providers=VALID_PROVIDERS,
+        model_options=model_options,
+        model_source=model_source,
+        discovery_error=discovery_error,
+        provider_credentials=provider_credentials,
         message=message,
         error=error,
         settings_path=config.ADMIN_SETTINGS_PATH,
     )
+
+
+@app.route("/api/admin/models", methods=["GET"])
+@require_admin
+def admin_models():
+    provider_name = (request.args.get("provider") or "").strip().lower()
+    if provider_name not in VALID_PROVIDERS:
+        return jsonify({"error": "invalid provider"}), 400
+
+    models, source, error = discover_models(provider_name)
+    return jsonify({
+        "provider": provider_name,
+        "models": models,
+        "source": source,
+        "error": error,
+    })
 
 
 @app.route("/admin/logs")

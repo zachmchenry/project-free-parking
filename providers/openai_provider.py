@@ -47,3 +47,13 @@ class OpenAIProvider(LLMProvider):
             temperature=temperature,
         )
         return response.choices[0].message.content.strip()
+
+    def list_models(self) -> List[str]:
+        """
+        Return model IDs visible to the configured OpenAI key.
+        """
+        page = self.client.models.list()
+        model_ids = sorted(
+            {m.id for m in getattr(page, "data", []) if getattr(m, "id", None)}
+        )
+        return model_ids

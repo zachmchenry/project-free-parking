@@ -34,6 +34,7 @@ class BedrockProvider(LLMProvider):
         region = os.environ.get("AWS_REGION", "us-east-1")
         # boto3 picks up credentials from env, ~/.aws/credentials, or IAM
         self.client = boto3.client("bedrock-runtime", region_name=region)
+        self._region = region
 
     def chat(
         self,
@@ -60,3 +61,15 @@ class BedrockProvider(LLMProvider):
         content_blocks = response["output"]["message"]["content"]
         parts = [b.get("text", "") for b in content_blocks if "text" in b]
         return "".join(parts).strip()
+
+    def list_models(self) -> List[str]:
+        """
+        Return available Bedrock foundation model IDs for the account/region.
+        """
+        bedrock = boto3.client("bedrock", region_name=self._region)
+        response = bedrock.list_foundation_models(byOutputModality="TEXT")
+        summaries = response.get("modelSummaries", [])
+        model_ids = sorted(
+            {item.get("modelId") for item in summaries if item.get("modelId")}
+        )
+        return model_ids

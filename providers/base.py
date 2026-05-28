@@ -55,3 +55,13 @@ class LLMProvider(ABC):
     def describe(self) -> str:
         """Used in the /health endpoint to report which provider is wired up."""
         return f"{self.name} ({self.model})"
+
+    def list_models(self) -> List[str]:
+        """
+        Optional model discovery hook for admin UX.
+
+        Providers can override this to return a list of available model IDs
+        for the configured account/region. Returning an empty list means
+        dynamic discovery is unsupported or unavailable.
+        """
+        return []

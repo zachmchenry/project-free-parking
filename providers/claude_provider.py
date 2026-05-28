@@ -54,3 +54,13 @@ class ClaudeProvider(LLMProvider):
             if getattr(block, "type", None) == "text":
                 parts.append(block.text)
         return "".join(parts).strip()
+
+    def list_models(self) -> List[str]:
+        """
+        Return model IDs visible to the configured Anthropic key.
+        """
+        response = self.client.models.list()
+        model_ids = sorted(
+            {m.id for m in getattr(response, "data", []) if getattr(m, "id", None)}
+        )
+        return model_ids

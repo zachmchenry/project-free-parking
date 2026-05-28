@@ -13,6 +13,7 @@
         <p class="eyebrow">Admin</p>
         <h1>Provider Configuration</h1>
         <nav class="admin-nav" aria-label="Admin sections">
+          <a href="{{ url_for('index') }}">Home</a>
           <a href="{{ url_for('admin') }}">Configuration</a>
           <a href="{{ url_for('admin_logs') }}">User Logs</a>
         </nav>
@@ -23,6 +24,11 @@
       {% endif %}
       {% if error %}
         <div class="notice notice-error">{{ error }}</div>
+      {% endif %}
+      {% if discovery_error %}
+        <div class="notice notice-error">
+          Could not load models dynamically for {{ selected_provider }}: {{ discovery_error }}
+        </div>
       {% endif %}
 
       <dl class="config-list">
@@ -54,11 +60,154 @@
         </select>
 
         <label for="model">Model</label>
-        <input id="model" name="model" type="text" value="{{ selected_model }}" />
+        <select id="model" name="model">
+          <option value="" {% if not selected_model %}selected{% endif %}>
+            -- Use provider default --
+          </option>
+          {% for model in model_options %}
+            <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+              {{ model }}
+            </option>
+          {% endfor %}
+        </select>
+        <p class="meta">
+          Model source: {{ model_source }}.
+          {% if model_options %}
+            Select from currently available models.
+          {% else %}
+            No models available yet for this provider.
+          {% endif %}
+        </p>
+
+        <fieldset class="provider-credentials-section" data-provider="claude">
+          <legend>Claude Credentials</legend>
+          <label for="anthropic_api_key">Anthropic API Key</label>
+          <input
+            id="anthropic_api_key"
+            name="anthropic_api_key"
+            type="password"
+            value="{{ provider_credentials.claude.anthropic_api_key }}"
+            autocomplete="new-password"
+          />
+        </fieldset>
+
+        <fieldset class="provider-credentials-section" data-provider="openai">
+          <legend>OpenAI Credentials</legend>
+          <label for="openai_api_key">OpenAI API Key</label>
+          <input
+            id="openai_api_key"
+            name="openai_api_key"
+            type="password"
+            value="{{ provider_credentials.openai.openai_api_key }}"
+            autocomplete="new-password"
+          />
+        </fieldset>
+
+        <fieldset class="provider-credentials-section" data-provider="gemini">
+          <legend>Gemini Credentials</legend>
+          <label for="gemini_api_key">Gemini API Key</label>
+          <input
+            id="gemini_api_key"
+            name="gemini_api_key"
+            type="password"
+            value="{{ provider_credentials.gemini.gemini_api_key }}"
+            autocomplete="new-password"
+          />
+        </fieldset>
+
+        <fieldset class="provider-credentials-section" data-provider="bedrock">
+          <legend>Bedrock Credentials</legend>
+          <label for="aws_access_key_id">AWS Access Key ID</label>
+          <input
+            id="aws_access_key_id"
+            name="aws_access_key_id"
+            type="text"
+            value="{{ provider_credentials.bedrock.aws_access_key_id }}"
+            autocomplete="off"
+          />
+
+          <label for="aws_secret_access_key">AWS Secret Access Key</label>
+          <input
+            id="aws_secret_access_key"
+            name="aws_secret_access_key"
+            type="password"
+            value="{{ provider_credentials.bedrock.aws_secret_access_key }}"
+            autocomplete="new-password"
+          />
+
+          <label for="aws_session_token">AWS Session Token (optional)</label>
+          <input
+            id="aws_session_token"
+            name="aws_session_token"
+            type="password"
+            value="{{ provider_credentials.bedrock.aws_session_token }}"
+            autocomplete="new-password"
+          />
+
+          <label for="aws_region">AWS Region</label>
+          <input
+            id="aws_region"
+            name="aws_region"
+            type="text"
+            value="{{ provider_credentials.bedrock.aws_region }}"
+            placeholder="us-east-1"
+            autocomplete="off"
+          />
+          <p class="meta">
+            Credentials are saved in the admin settings file for runtime use.
+          </p>
+        </fieldset>
 
         <button type="submit">Save Configuration</button>
       </form>
     </section>
   </main>
+  <script>
+    const providerInput = document.getElementById("provider");
+    const modelSelect = document.getElementById("model");
+    const credentialSections = document.querySelectorAll(".provider-credentials-section");
+
+    function refreshCredentialVisibility() {
+      for (const section of credentialSections) {
+        section.style.display = section.dataset.provider === providerInput.value ? "block" : "none";
+      }
+    }
+
+    async function refreshModels(providerName) {
+      try {
+        const response = await fetch(`/api/admin/models?provider=${encodeURIComponent(providerName)}`);
+        if (!response.ok) {
+          return;
+        }
+        const payload = await response.json();
+        const previousValue = modelSelect.value;
+        modelSelect.innerHTML = "";
+        const blankOption = document.createElement("option");
+        blankOption.value = "";
+        blankOption.textContent = "-- Use provider default --";
+        blankOption.selected = true;
+        modelSelect.appendChild(blankOption);
+        for (const model of payload.models || []) {
+          const option = document.createElement("option");
+          option.value = model;
+          option.textContent = model;
+          if (model === previousValue) {
+            option.selected = true;
+            blankOption.selected = false;
+          }
+          modelSelect.appendChild(option);
+        }
+      } catch (_err) {
+        // Keep current UX if dynamic model fetch fails.
+      }
+    }
+
+    providerInput.addEventListener("change", () => {
+      refreshModels(providerInput.value);
+      refreshCredentialVisibility();
+    });
+
+    refreshCredentialVisibility();
+  </script>
 </body>
 </html>

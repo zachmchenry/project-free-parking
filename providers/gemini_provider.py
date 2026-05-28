@@ -64,3 +64,19 @@ class GeminiProvider(LLMProvider):
             ),
         )
         return (response.text or "").strip()
+
+    def list_models(self) -> List[str]:
+        """
+        Return Gemini models that support generateContent.
+        """
+        model_ids = set()
+        for model in self.client.models.list():
+            name = getattr(model, "name", "")
+            if not name:
+                continue
+            supported_actions = set(getattr(model, "supported_actions", []) or [])
+            if supported_actions and "generateContent" not in supported_actions:
+                continue
+            # SDK returns names like "models/gemini-2.0-flash"
+            model_ids.add(name.split("/", 1)[1] if "/" in name else name)
+        return sorted(model_ids)
